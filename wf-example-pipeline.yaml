@@ -1,0 +1,82 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-example-pipeline
+spec:
+  entrypoint: dag-tasks
+  templates:
+  - name: dag-tasks
+    dag:
+      tasks:
+      - name: task1
+        template: fine-alignment
+        arguments:
+          artifacts:
+            - name: scan_1
+              from: s3
+            - name: scan_2
+              from: s3
+            - name: scan_3
+              from: s3
+
+      - name: task2
+        template: convert-to-mesh
+        dependencies: [task1]
+        arguments:
+          artifacts:
+            - name: objectfinal
+              from: "{{tasks.task1.outputs.artifacts.object2}}"
+        
+  - name: fine-alignment
+    inputs:
+      artifacts:
+      - name: scan_1
+        path: /files/scan_1.bin
+      - name: scan_2
+        path: /files/scan_2.bin
+      - name: scan_3
+        path: /files/scan_3.bin
+        s3:
+          # Use the corresponding endpoint depending on your S3 provider:
+          #   AWS: s3.amazonaws.com
+          #   GCS: storage.googleapis.com
+          #   Minio: my-minio-endpoint.default:9000
+          bucket: my-bucket
+          endpoint: minio:9000
+          key: /2021_IFPT_hall
+          # accessKeySecret and secretKeySecret are secret selectors.
+          # It references the k8s secret named 'my-s3-credentials'.
+          # This secret is expected to have have the keys 'accessKey'
+          # and 'secretKey', containing the base64 encoded credentials
+          # to the bucket.
+          accessKeySecret:
+            name: my-minio-cred
+            key: accessKey
+          secretKeySecret:
+            name: my-minio-cred
+            key: secretKey
+    script:
+      image: ifte110/cloudcompare-simple-artifact
+      command: [bash]
+      source: |
+        xvfb-run CloudCompare -O /files/1.bin -O /files/2.bin -O /files/3.bin -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /files/output.bin -SILENT
+    outputs:
+      artifacts:
+      - name: object2
+        path: /files/output.bin
+
+  - name : convert-to-mesh
+    inputs:
+      artifacts:
+        - name: objectfinal
+          path: /files/output.bin
+    script:
+      image: ifte110/pym
+      command: [python]
+      source: |
+        print('pymeshlab code will go here')
+    outputs:
+      artifacts:
+      - name: outputfinal
+        path: /files/output2.bin
+    

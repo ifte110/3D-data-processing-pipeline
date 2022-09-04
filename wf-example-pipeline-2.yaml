@@ -1,0 +1,87 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-example-pipeline
+spec:
+  entrypoint: dag-tasks
+  templates:
+  - name: dag-tasks
+    dag:
+      tasks:
+      - name: input-data
+        template: input-data
+      - name: task1
+        template: fine-alignment
+        dependencies: [input-data]
+        arguments:
+          artifacts:
+            - name: files
+              from: "{{tasks.input-data.outputs.result}}"
+      - name: task2
+        template: convert-to-mesh
+        dependencies: [task1]
+        arguments:
+          artifacts:
+            - name: objectfinal
+              from: "{{tasks.task1.outputs.artifacts.object2}}"
+
+  - name: input-data
+    data:
+      source:
+        artifactPaths:
+          s3:
+            bucket: my-bucket
+            endpoint: minio:9000
+            insecure: true
+            accessKeySecret:
+              name: my-minio-cred
+              key: accesskey
+            secretKeySecret:
+              name: my-minio-cred
+              key: secretkey
+
+      transformation: 
+        - expression: "filter(data, {# endsWith \".bin\"})"
+    outputs:
+      artifacts:
+        - name: files
+          path: /files
+   
+      
+  - name: fine-alignment
+    inputs:
+      artifacts:
+        - name: files
+          path: /usr/app/src
+    script:
+      image: ifte110/cloudcompare-simple-artifact
+      command: [bash]
+      source: 
+        FILES = "/usr/app/src"
+        for f in $FILES[@]
+        do 
+           echo $f[i] 
+           cp $f[i] /files/output.bin
+
+           xvfb-run CloudCompare -O $f[i]  -O $f[i+1] -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /files/output.bin -SILENT &&
+           xvfb-run CloudCompare -O /files/output.bin -O $f[i+2] -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /files/output.bin -SILENT
+    outputs:
+      artifacts:
+      - name: object2
+        path: /files/output.bin
+
+  - name : convert-to-mesh
+    inputs:
+      artifacts:
+        - name: objectfinal
+          path: /files/output.bin
+    script:
+      image: ifte110/pym
+      command: [python]
+      source: |
+        print('pymeshlab code will go here')
+    outputs:
+      artifacts:
+      - name: outputfinal
+        path: /files/output2.bin
+    
