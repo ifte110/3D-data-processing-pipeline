@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: test-test
+  name: wf-example-pipeline
 spec:
   entrypoint: dag-tasks
   templates:
@@ -11,13 +11,18 @@ spec:
       - name: input-data
         template: input-data
       - name: task1
-        template: fine-alignment
+        template: log-processing
         dependencies: [input-data]
+        withParam: "{{tasks.input-data.outputs.result}}"
         arguments:
           artifacts:
             - name: file
-              from: "{{tasks.input-data.outputs.artifacts.file}}"
-         
+              s3:
+                key: "{{item}}"
+          parameters:
+            - name: file-name
+              value: "{{item}}"            
+
   - name: input-data
     data:
       source:
@@ -26,32 +31,30 @@ spec:
           s3:
             bucket: my-bucket
 
+      transformation: 
+        - expression: "filter(data, {# endsWith \".bin\"})"
     outputs:
       artifacts:
         - name: file
           path: /tmp
-       
-  - name: fine-alignment
+      
+  - name:  log-processing
     inputs:
+      parameters:
+        - name: file-name
       artifacts:
         - name: file
-          path: /tmp
+          path: /file
 
     script:
-      image: ifte110/cloudcompare-simple-artifact
+      image: ifte110/cc-new
       command: [bash]
       source: |
-        FILES=(); for file in /files; do FILES=("${FILES[@]}" "$file"); done
-
-        echo "INPUT1 ${FILES[0]}" "INPUt ${FILES[1]}" "OUTPUT output"
-
-        len=${#FILES[@]}
-        for (( i=2; i < $len; i++ )); do 
-                 echo "INPUT1: output" "INPUT2: ${FILES[$i]}" "OUTPUT output"
+        for i in $(ls /file)
+        do
+           stat --format '%s %N' "$i"
         done
-
     outputs:
       artifacts:
-      - name: object
-        path: /tmp
-    
+        - name: file
+          path: /file

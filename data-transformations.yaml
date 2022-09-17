@@ -39,7 +39,7 @@ spec:
               bucket: my-bucket
 
         transformation:
-          - expression: "filter(data, {# endsWith \"main.log\"})"
+          - expression: "filter(data, {# endsWith \".bin\"})"
       outputs:
         artifacts:
           - name: file
@@ -58,6 +58,7 @@ spec:
         args:
           - |
             echo {{inputs.parameters.file-name}}
-            head /file
-
-
+      outputs:
+        artifacts:
+          - name: file
+            path: /file

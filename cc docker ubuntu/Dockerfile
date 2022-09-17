@@ -1,8 +1,6 @@
 FROM ubuntu
 
-WORKDIR /files
-
-COPY panel_artec_scan.obj /files/
+RUN mkdir /etc/project_folder
 
 RUN apt-get update && apt-get install -y cloudcompare
 

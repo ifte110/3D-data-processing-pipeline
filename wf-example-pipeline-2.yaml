@@ -13,68 +13,70 @@ spec:
       - name: task1
         template: fine-alignment
         dependencies: [input-data]
+        withParam: "{{tasks.input-data.outputs.result}}"
         arguments:
           artifacts:
-            - name: files
-              from: "{{tasks.input-data.outputs.result}}"
+            - name: file
+              s3:
+                key: "{{item}}"
+          parameters:
+            - name: file-name
+              value: "{{item}}"
+
       - name: task2
         template: convert-to-mesh
         dependencies: [task1]
         arguments:
           artifacts:
-            - name: objectfinal
-              from: "{{tasks.task1.outputs.artifacts.object2}}"
+            - name: object
+              from: "{{tasks.task1.outputs.artifacts.object}}"
 
   - name: input-data
     data:
       source:
         artifactPaths:
+          name: test-bucket
           s3:
             bucket: my-bucket
-            endpoint: minio:9000
-            insecure: true
-            accessKeySecret:
-              name: my-minio-cred
-              key: accesskey
-            secretKeySecret:
-              name: my-minio-cred
-              key: secretkey
 
       transformation: 
         - expression: "filter(data, {# endsWith \".bin\"})"
     outputs:
       artifacts:
-        - name: files
-          path: /files
+        - name: file
+          path: /tmp
    
       
   - name: fine-alignment
     inputs:
+      parameters:
+        - name: file-name
       artifacts:
-        - name: files
-          path: /usr/app/src
+        - name: file
+          path: /tmp/files
     script:
       image: ifte110/cloudcompare-simple-artifact
       command: [bash]
-      source: 
-        FILES = "/usr/app/src"
-        for f in $FILES[@]
-        do 
-           echo $f[i] 
-           cp $f[i] /files/output.bin
+      source: |
+        FILES=(); for file in /tmp/files ; do FILES=("${FILES[@]}" "$file"); done
 
-           xvfb-run CloudCompare -O $f[i]  -O $f[i+1] -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /files/output.bin -SILENT &&
-           xvfb-run CloudCompare -O /files/output.bin -O $f[i+2] -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /files/output.bin -SILENT
+        xvfb-run CloudCompare -O  ${FILES[0]}  -O ${FILES[1]} -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /files/output.bin -SILENT
+
+        len=${#FILES[@]}
+        for (( i=2; i < $len; i++ )); do
+                 xvfb-run CloudCompare -O  /files/output.bin  -O ${FILES[i]} -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /files/output.bin -SILENT
+        done
+
     outputs:
       artifacts:
-      - name: object2
+      - name: object
         path: /files/output.bin
 
   - name : convert-to-mesh
     inputs:
       artifacts:
-        - name: objectfinal
-          path: /files/output.bin
+        - name: object
+          path: /tmp/output.bin
     script:
       image: ifte110/pym
       command: [python]
@@ -83,5 +85,4 @@ spec:
     outputs:
       artifacts:
       - name: outputfinal
-        path: /files/output2.bin
-    
+        path: /tmp    
