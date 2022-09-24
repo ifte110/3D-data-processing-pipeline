@@ -45,12 +45,12 @@ spec:
         - name: file-name
       artifacts:
         - name: file
-          path: /etc/output
+          path: /file
     script:
-      image: ifte110/cloudcompare-simple
+      image: ifte110/cc-new
       command: [bash]
       source: |
-        FILES=($(find "/etc/output" -type f -print0 | while IFS= read -r -d $'\0' file; do echo "$file"; done))
+        FILES=($(find "/file" -type f -print0 | while IFS= read -r -d $'\0' file; do echo "$file"; done))
         
         echo "INPUT1 ${FILES[0]}" "INPUt ${FILES[1]}" "OUTPUT output"
 
@@ -61,5 +61,5 @@ spec:
 
     outputs:
       artifacts:
-      - name: object
-        path: /etc/output
+      - name: file
+        path: /file

@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-example-pipeline
+spec:
+  entrypoint: dag-tasks
+  templates:
+  - name: dag-tasks
+    dag:
+      tasks:
+      - name: fine-registration
+        template: fine-registration
+
+      
+  - name: fine-registration
+    inputs:
+      artifacts:
+        - name: file
+          path: /file
+          s3:
+            bucket: my-bucket
+            key: /2021_IFPT_hall.tar.gz
+    script:
+      image: ifte110/cc-new
+      command: [bash]
+      source: |
+        FILES=($(find "/file" -type f -print0 | while IFS= read -r -d $'\0' file; do echo "$file"; done))
+        
+        xvfb-run CloudCompare -SILENT -AUTO_SAVE OFF -O  ${FILES[0]}  -O ${FILES[1]} -ICP -RANDOM_SAMPLING_LIMIT 1000 -SAVE_CLOUDS FILE /tmp/output_2.bin FILE /tmp/output_2.txt
+
+        len=${#FILES[@]}
+        for (( i=2; i < $len; i++ )); do
+                 xvfb-run -a CloudCompare -SILENT -AUTO_SAVE OFF -O  /tmp/output_$i.bin  -O ${FILES[i]} -ICP -RANDOM_SAMPLING_LIMIT 1000 -SAVE_CLOUDS FILE /tmp/output_$[i+1].bin FILE /tmp/output_$[i+1].txt
+        done
+
+        mv /tmp/output_$i.bin /tmp/output.bin 
+
+    outputs:
+      artifacts:
+      - name: object
+        path: /tmp/output.bin

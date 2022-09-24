@@ -53,36 +53,37 @@ spec:
         - name: file-name
       artifacts:
         - name: file
-          path: /tmp/files
+          path: /file
     script:
-      image: ifte110/cloudcompare-simple-artifact
+      image: ifte110/cc-new
       command: [bash]
       source: |
-        FILES=(); for file in /tmp/files ; do FILES=("${FILES[@]}" "$file"); done
+        FILES=($(find "/file" -type f -print0 | while IFS= read -r -d $'\0' file; do echo "$file"; done))
 
-        xvfb-run CloudCompare -O  ${FILES[0]}  -O ${FILES[1]} -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /files/output.bin -SILENT
+        xvfb-run CloudCompare -O  ${FILES[0]}  -O ${FILES[1]} -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /file/output.bin -SILENT
 
         len=${#FILES[@]}
         for (( i=2; i < $len; i++ )); do
-                 xvfb-run CloudCompare -O  /files/output.bin  -O ${FILES[i]} -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /files/output.bin -SILENT
+                 xvfb-run CloudCompare -O  /file/output.bin  -O ${FILES[i]} -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /file/output.bin -SILENT
         done
 
     outputs:
       artifacts:
       - name: object
-        path: /files/output.bin
+        path: /file/output.bin
 
   - name : convert-to-mesh
     inputs:
       artifacts:
         - name: object
-          path: /tmp/output.bin
+          path: /file/output.bin
     script:
       image: ifte110/pym
       command: [python]
       source: |
-        print('pymeshlab code will go here')
+        import glob
+        print(glob.glob("/file/*"))
     outputs:
       artifacts:
       - name: outputfinal
-        path: /tmp    
+        path: /file/output.bin 
