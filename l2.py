@@ -1,3 +1,0 @@
-import pymeshlab as pm
-
-pm.print_filter_parameter_list('generate_surface_reconstruction_screened_poisson')

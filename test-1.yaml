@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: test-test
+spec:
+  entrypoint: dag-tasks
+  templates:
+  - name: dag-tasks
+    dag:
+      tasks:
+      - name: input-data
+        template: input-data
+      - name: task1
+        template: fine-alignment
+        dependencies: [input-data]
+        arguments:
+          artifacts:
+            - name: file
+              from: "{{tasks.input-data.outputs.artifacts.file}}"
+         
+  - name: input-data
+    data:
+      source:
+        artifactPaths:
+          name: test-bucket
+          s3:
+            bucket: my-bucket
+
+    outputs:
+      artifacts:
+        - name: file
+          path: /tmp
+       
+  - name: fine-alignment
+    inputs:
+      artifacts:
+        - name: file
+          path: /tmp
+
+    script:
+      image: ifte110/cloudcompare-simple-artifact
+      command: [bash]
+      source: |
+        FILES=(); for file in /files; do FILES=("${FILES[@]}" "$file"); done
+
+        echo "INPUT1 ${FILES[0]}" "INPUt ${FILES[1]}" "OUTPUT output"
+
+        len=${#FILES[@]}
+        for (( i=2; i < $len; i++ )); do 
+                 echo "INPUT1: output" "INPUT2: ${FILES[$i]}" "OUTPUT output"
+        done
+
+    outputs:
+      artifacts:
+      - name: object
+        path: /tmp
+    

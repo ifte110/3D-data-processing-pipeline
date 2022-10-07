@@ -10,6 +10,20 @@ spec:
       tasks:
       - name: fine-registration
         template: fine-registration
+      - name: SOR
+        template: SOR
+        dependencies: [fine-registration]
+        arguments:
+          artifacts:
+            - name: object
+              from: "{{tasks.fine-registration.outputs.artifacts.object}}"
+      - name: cloud-to-mesh
+        template: cloud-to-mesh
+        dependencies: [SOR]
+        arguments:
+          artifacts:
+            - name: object
+              from: "{{tasks.SOR.outputs.artifacts.object}}"
 
       
   - name: fine-registration
@@ -39,3 +53,40 @@ spec:
       artifacts:
       - name: object
         path: /tmp/output.bin
+
+  - name : SOR
+    inputs:
+      artifacts:
+        - name: object
+          path: /file/output.bin
+    script:
+      image: ifte110/cc-new
+      command: [bash]
+      source: |
+        xvfb-run CloudCompare -SILENT -AUTO_SAVE OFF -O /file/output.bin -SOR 8 1 -C_EXPORT_FMT PLY -SAVE_CLOUDS FILE /tmp/output_sor.ply
+
+    outputs:
+      artifacts:
+      - name: object
+        path: /tmp/output_sor.ply
+
+  - name : cloud-to-mesh
+    inputs:
+      artifacts:
+        - name: object
+          path: /file/output_sor.ply
+    script:
+      image: ifte110/pym
+      command: [python3]
+      source: |
+        import pymeshlab as pm
+        ms = pm.MeshSet()
+        ms.load_new_mesh('/file/output_sor.ply')
+        ms.apply_filter('compute_normal_for_point_clouds')
+        ms.apply_filter('generate_surface_reconstruction_screened_poisson')
+        ms.save_current_mesh('/tmp/output_mesh.obj')
+
+    outputs:
+      artifacts:
+      - name: object
+        path: /tmp/output_mesh.obj
