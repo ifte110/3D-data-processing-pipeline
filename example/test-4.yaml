@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-example-pipeline
+spec:
+  entrypoint: dag-tasks
+  templates:
+  - name: dag-tasks
+    dag:
+      tasks:
+      - name: input-data
+        template: input-data
+      - name: task1
+        template: log-processing
+        dependencies: [input-data]
+        withParam: "{{tasks.input-data.outputs.result}}"
+        arguments:
+          artifacts:
+            - name: file
+              s3:
+                key: "{{item}}"
+          parameters:
+            - name: file-name
+              value: "{{item}}"            
+
+  - name: input-data
+    data:
+      source:
+        artifactPaths:
+          name: test-bucket
+          s3:
+            bucket: my-bucket
+
+      transformation: 
+        - expression: "filter(data, {# endsWith \".bin\"})"
+    outputs:
+      artifacts:
+        - name: file
+          path: /tmp
+      
+  - name:  log-processing
+    inputs:
+      parameters:
+        - name: file-name
+      artifacts:
+        - name: file
+          path: /file
+
+    script:
+      image: ifte110/cc-new
+      command: [bash]
+      source: |
+        for i in $(ls /file)
+        do
+           stat --format '%s %N' "$i"
+        done
+    outputs:
+      artifacts:
+        - name: file
+          path: /file

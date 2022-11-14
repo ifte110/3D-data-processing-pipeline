@@ -1,0 +1,89 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  name: wf-example-pipeline
+spec:
+  entrypoint: dag-tasks
+  templates:
+  - name: dag-tasks
+    dag:
+      tasks:
+      - name: input-data
+        template: input-data
+      - name: task1
+        template: fine-alignment
+        dependencies: [input-data]
+        withParam: "{{tasks.input-data.outputs.result}}"
+        arguments:
+          artifacts:
+            - name: file
+              s3:
+                key: "{{item}}"
+          parameters:
+            - name: file-name
+              value: "{{item}}"
+
+      - name: task2
+        template: convert-to-mesh
+        dependencies: [task1]
+        arguments:
+          artifacts:
+            - name: object
+              from: "{{tasks.task1.outputs.artifacts.object}}"
+
+  - name: input-data
+    data:
+      source:
+        artifactPaths:
+          name: test-bucket
+          s3:
+            bucket: my-bucket
+
+      transformation: 
+        - expression: "filter(data, {# endsWith \".bin\"})"
+    outputs:
+      artifacts:
+        - name: file
+          path: /tmp
+   
+      
+  - name: fine-alignment
+    inputs:
+      parameters:
+        - name: file-name
+      artifacts:
+        - name: file
+          path: /file
+    script:
+      image: ifte110/cc-new
+      command: [bash]
+      source: |
+        FILES=($(find "/file" -type f -print0 | while IFS= read -r -d $'\0' file; do echo "$file"; done))
+
+        xvfb-run CloudCompare -O  ${FILES[0]}  -O ${FILES[1]} -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /file/output.bin -SILENT
+
+        len=${#FILES[@]}
+        for (( i=2; i < $len; i++ )); do
+                 xvfb-run CloudCompare -O  /file/output.bin  -O ${FILES[i]} -ICP -RANDOM_SAMPLING_LIMIT 1000  -AUTO_SAVE OFF -SAVE_CLOUDS FILE /file/output.bin -SILENT
+        done
+
+    outputs:
+      artifacts:
+      - name: object
+        path: /file/output.bin
+
+  - name : convert-to-mesh
+    inputs:
+      artifacts:
+        - name: object
+          path: /file/output.bin
+    script:
+      image: ifte110/pym
+      command: [python]
+      source: |
+        import glob
+        print(glob.glob("/file/*"))
+    outputs:
+      artifacts:
+      - name: outputfinal
+        path: /file/output.bin 
