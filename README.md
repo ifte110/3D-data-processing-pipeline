@@ -1,1 +1,1 @@
-#main pipeline file : test-7.yaml
+Examine and analyze if workflow engine can increase the level of automation of a 3D data processing pipeline in terms of overall processing time, ease of use, third-party software integration, parallel processing, and appropriate fault handling.
