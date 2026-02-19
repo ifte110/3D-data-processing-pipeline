@@ -65,7 +65,7 @@ Outputs ready for visualization or analysis
 
 ### File descriptions
 
-3d_pipeline.yaml <- Defines the workflow executed by Argo.
+### 3d_pipeline.yaml <- Defines the workflow executed by Argo.
 
 Contains:
 
@@ -79,19 +79,19 @@ Contains:
 
 This file is the main orchestration logic of the pipeline.
 
-Final Presentation - Final.pdf
+### Final Presentation - Final.pdf
 
 Explains:
 
-project motivation
+- project motivation
 
-architecture decisions
+- architecture decisions
 
-evaluation criteria
+- evaluation criteria
 
-results of automation tests
+- results of automation tests
 
-Useful for understanding design choices.
+- Useful for understanding design choices.
 
 ## 4. Workflow Execution Prerequisites
 
