@@ -92,7 +92,7 @@ Explains:
 
 - Useful for understanding design choices.
 
-## 4. Workflow Execution Prerequisites
+## 4. Workflow Execution
 
 Install:
 
