@@ -94,7 +94,7 @@ Explains:
 
 ## 4. Workflow Execution
 
-Install:
+Requirements:
 
 - Docker Desktop
 
