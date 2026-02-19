@@ -4,17 +4,17 @@
 
 This repository contains a prototype automated 3D data processing workflow designed to evaluate whether a workflow engine can improve:
 
-automation
+- automation
 
-processing time
+- processing time
 
-ease of use
+- ease of use
 
-integration with external tools
+- integration with external tools
 
-parallel processing
+- parallel processing
 
-fault handling
+- fault handling
 
 The pipeline is orchestrated using Argo Workflows and integrates containerized processing steps for handling 3D data.
 
@@ -50,7 +50,7 @@ Outputs ready for visualization or analysis
 ````
 
 
-3. Repository Structure
+## 3. Repository Structure
 
 ````
 3D-data-processing-pipeline/
@@ -63,21 +63,19 @@ Outputs ready for visualization or analysis
 ````
 
 
-File descriptions
+### File descriptions
 
-3d_pipeline.yaml
-
-Defines the workflow executed by Argo.
+3d_pipeline.yaml <- Defines the workflow executed by Argo.
 
 Contains:
 
-workflow templates
+- workflow templates
 
-container steps
+- container steps
 
-dependencies between tasks
+- dependencies between tasks
 
-storage configuration
+- storage configuration
 
 This file is the main orchestration logic of the pipeline.
 
@@ -95,12 +93,11 @@ results of automation tests
 
 Useful for understanding design choices.
 
-4. Workflow Execution
-Prerequisites
+## 4. Workflow Execution Prerequisites
 
 Install:
 
-- Docker
+- Docker Desktop
 
 - Kubernetes (Minikube or cluster)
 
@@ -117,7 +114,7 @@ WSL Ubuntu (if running on Windows)
 ### Step 1: Start Kubernetes
 
 ````
-Step 1: Start Kubernetes
+Start Docker Desktop
 ````
 
 ### Step 2: Install Argo
