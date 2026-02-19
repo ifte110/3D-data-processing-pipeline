@@ -55,7 +55,7 @@ Outputs ready for visualization or analysis
 ````
 3D-data-processing-pipeline/
 │
-├── 3d_pipeline.yaml        # Argo workflow definition
+├── pipeline.yaml        # Argo workflow definition
 ├── README.md               # Basic project description
 ├── Final Presentation.pdf  # Project presentation
 └── .gitignore
@@ -64,7 +64,7 @@ Outputs ready for visualization or analysis
 
 ### File descriptions
 
-### 3d_pipeline.yaml <- Defines the workflow executed by Argo.
+### pipeline.yaml <- Defines the workflow executed by Argo.
 
 Contains:
 
@@ -134,7 +134,7 @@ kubectl get pods -n argo
 Run:
 
 ````
-argo submit 3d_pipeline.yaml
+argo submit pipeline.yaml
 ````
 
 
