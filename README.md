@@ -56,7 +56,6 @@ Outputs ready for visualization or analysis
 3D-data-processing-pipeline/
 │
 ├── 3d_pipeline.yaml        # Argo workflow definition
-├── mesh-test.py            # Example mesh processing script
 ├── README.md               # Basic project description
 ├── Final Presentation.pdf  # Project presentation
 └── .gitignore
